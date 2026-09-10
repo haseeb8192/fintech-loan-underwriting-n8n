@@ -1,0 +1,151 @@
+{
+  "name": "AI Lead Qualification & Routing Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbound-lead",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        128
+      ],
+      "id": "e4ca7406-b85e-47cb-850b-c2e5148293a6",
+      "name": "Webhook Intake",
+      "webhookId": "5a9475a2-0741-451d-b34c-d40ee1ad0c2e"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const data = item.json.body || item.json;\n  const firstName = (data.first_name || '').trim();\n  const lastName = (data.last_name || '').trim();\n  const email = (data.email || '').trim().toLowerCase();\n  const company = (data.company || '').trim();\n  const budget = (data.budget || '').trim();\n  const message = (data.message || '').trim();\n\n  const domain = email.split('@')[1] || '';\n  const freeProviders = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];\n  const isBusinessEmail = domain !== '' && !freeProviders.includes(domain);\n\n  return {\n    json: {\n      fullName: `${firstName} ${lastName}`.trim() || 'Anonymous Lead',\n      firstName,\n      lastName,\n      email,\n      domain,\n      isBusinessEmail,\n      company: company || (isBusinessEmail ? domain.split('.')[0].toUpperCase() : 'Not Specified'),\n      budget,\n      message,\n      receivedAt: new Date().toISOString()\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        128
+      ],
+      "id": "6c8340e9-90e2-4813-9bda-a2ddc9f1fbe4",
+      "name": "Normalize Input Data"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.isBusinessEmail }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High Priority (Business Lead)"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -496,
+        128
+      ],
+      "id": "fb9e4aad-7965-4376-9d64-919ea1a8e126",
+      "name": "Route by Priority"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "contact",
+        "email": "={{ $json.email }}",
+        "additionalFields": {
+          "companyName": "={{ $json.company }}",
+          "firstName": "={{ $json.firstname }}",
+          "lastName": "={{ $json.latname }}"
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "2cd555a4-542b-4b12-b929-e73dbffd1e10",
+      "name": "HubSpot Create Contact",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "OAHqO8X9I8N0cCz8",
+          "name": "HubSpot Service Key account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Intake": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input Data": {
+      "main": [
+        [
+          {
+            "node": "Route by Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Priority": {
+      "main": [
+        [
+          {
+            "node": "HubSpot Create Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b877899d-83ba-4421-9ee5-bee0f56d7534",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "56dc4b5d599d7fec2a8f57340798e8df3a606b85dcb772fdf6b7bd2f3a9f6f85"
+  },
+  "nodeGroups": [],
+  "id": "Y7nlHUk1pBNmJ04G",
+  "tags": []
+}
