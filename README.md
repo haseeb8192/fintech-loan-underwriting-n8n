@@ -1,17 +1,21 @@
-# 🏦 Event-Driven FinTech Underwriting & Risk-Routing Engine
+# Autonomous FinTech Loan Underwriting & Risk Routing Engine
 
-A production-ready workflow automation pipeline built with **n8n**, integrating automated financial ratio evaluations, risk scoring, and **LLM fallback orchestration** for intelligent loan decisioning.
+An event-driven backend service engineered to automate unstructured loan application intake, credit assessment, risk evaluation, and multi-tier applicant routing. Built to handle asynchronous processing with sub-2s execution latency and automated fallbacks.
 
 ---
 
-## 📌 Architecture Overview  
+## Business Problem
+NBFCs and micro-lending platforms spend hundreds of manual engineering and operational hours reviewing unqualified leads and handling unstandardized applicant inputs. Manual triage introduces operational bottlenecks, inconsistent risk scoring, and high drop-off rates.
 
+## System Architecture
 ```mermaid
-graph TD
-    A[Inbound Loan Application Webhook] --> B[Parse & Validate Financial Data]
-    B --> C{Rule-based Ratio Check}
-    C -->|High Confidence Pass/Fail| D[Automated Decision & CRM Sync]
-    C -->|Borderline / Complex Edge Case| E[LLM Structured Risk Assessment]
-    E --> F[Generate Structured JSON Risk Matrix]
-    F --> D
-    D --> G[Disbursement Trigger & Multi-Channel Alert]
+flowchart TD
+    A[Loan Ingestion / Webhook] --> B[FastAPI Gateway]
+    B --> C[Pydantic Validation & Sanitization]
+    C --> D[n8n Event Orchestrator]
+    D --> E{LLM Extraction & Risk Scoring}
+    E -->|Success| F[MongoDB State Store]
+    E -->|Timeout / Rate Limit| G[Fallback Pipeline / Manual Review Queue]
+    F --> H{Risk Score > Threshold}
+    H -->|Approved| I[Automated Underwriter Notification / Dispatch]
+    H -->|Flagged| J[Human-in-the-Loop Slack / Review Channel]
